@@ -30,54 +30,57 @@ dependencies {
 }
 ```
 
-// TODO Change to android
-## How to use Mage in your iOS project
+## How to use Mage in your android project
 
-### 1) Set the API Key in your AppDelegate.m
+### 1) Import the Java Mage SDK
 
-```objective-c
-#import <Mage/Mage.h>
-// ...
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions{
-  // ...
-  [[Mage sharedInstance] setOptions:@{
-    // Set your API key
-    @"apiKey": @"YOUR_API_KEY",
-    // Indicate if your app is running on a consumer device.
-    // Please not that production should not be set to true if your app runs on real testing devices!
-    // Default: false
-    @"production": @(TRUE),
-    // Optional: strict mode. The SDK will crash when errors occur.
-    // This way you can test if you set up the SDK correctly!
-    // Default: false
-    @"strict": @(FALSE)
-  }];
-  // ...
-}
+```java
+import io.getmage.android.Mage;
 ```
 
-### 2) Get your in app purchase IDs
+### 2) Set the API Key
+
+```java
+Mage.setOptions(getApplicationContext(), new HashMap<String, Object>() {{
+                // Set your API key
+                put("apiKey", "YOUR_API_KEY");
+                // Indicate if your app is running on a consumer device.
+                // Please note that production should not be set to true if your app runs on real testing devices!
+                // Default: false
+                put("isStrict", true);
+                // Optional: strict mode. The SDK will crash when errors occur.
+                // This way you can test if you set up the SDK correctly!
+                // Default: false
+                put("isProduction", true);
+            }});
+```
+
+### 3) Get your in app purchase IDs
 
 Wherever you show in app purchases call `getIdFromProductName` to get the correct in app purchase ID. This could be, for example, somewhere in your ViewController for your store view / popup.
 
-```objective-c
+```java
 // Get the correct in app purchase id to show to the user
-// In some cases (no internet connection) the method won't return anything so defining a fallback is not a bad idea!
-NSString *myInAppPurchaseID = [[Mage sharedInstance] getIdFromProductName:@"MyProduct" withFallback:@"com.myapp.fallbackID"]
+// In some cases (i.e. user has no internet connection) the method won't return anything so defining a fallback is not a bad idea!
+Mage.getIdFromProductName("myProduct", "com.myapp.myFallbackID");
 ```
 
-### 3) Know what you sold
+### 4) Know what you sold
 
 In some cases you might want to know what the user bought so you can send it to a CRM,
 your own backend or for some custom logic inside your app. `getProductNameFromId` will help you out!
 
-```objective-c
+```java
 // Get the correct in app purchase id to show to the user
-[[Mage sharedInstance] getProductNameFromId:@"com.myapp.someIapID" completionHandler:^(NSError * _Nonnull err, NSString * _Nonnull productName) {
-  if(!err){
-    NSLog(@"User bought: %@", productName);
-  }
-}];
+Mage.getProductNameFromId("com.myapp.someIapID");
+```
+
+### 5) Report purchases
+
+Auto-purchase tracking is not yet implemented in our Android Java SDK. Whenever a user makes a purchase you need to report it.
+
+```java
+Mage.userPurchased("com.myapp.someIapID")
 ```
 
 
