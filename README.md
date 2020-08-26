@@ -41,18 +41,23 @@ import io.getmage.android.Mage;
 ### 2) Set the API Key
 
 ```java
-Mage.setOptions(getApplicationContext(), new HashMap<String, Object>() {{
-                // Set your API key
-                put("apiKey", "YOUR_API_KEY");
-                // Indicate if your app is running on a consumer device.
-                // Please note that production should not be set to true if your app runs on real testing devices!
-                // Default: false
-                put("isStrict", true);
-                // Optional: strict mode. The SDK will crash when errors occur.
-                // This way you can test if you set up the SDK correctly!
-                // Default: false
-                put("isProduction", true);
-            }});
+try {
+    Mage.setOptions(getApplicationContext(), new HashMap<String, Object>() {{
+        // Set your API key
+        put("apiKey", "YOUR_API_KEY");
+        // Optional: strict mode. The SDK will crash when errors occur.
+        // This way you can test if you set up the SDK correctly!
+        // Default: false
+        put("isStrict", true);
+        // Indicate if your app is running on a consumer device.
+        // Please note that production should not be set to true if your app runs on real testing devices!
+        // Default: false
+        put("isProduction", true);
+    }});
+} catch (Exception e) {
+    // this will never be thrown except your config was wrong and isStrict is set to true
+    e.printStackTrace();
+}
 ```
 
 ### 3) Get your in app purchase IDs
@@ -72,7 +77,11 @@ your own backend or for some custom logic inside your app. `getProductNameFromId
 
 ```java
 // Get the correct in app purchase id to show to the user
-Mage.getProductNameFromId("com.myapp.someIapID");
+// This method will return null if no product was found for the provided ID
+String someProductName = Mage.getProductNameFromId("com.myapp.someIapID");
+if (someProductName) {
+    // do stuff..
+}
 ```
 
 ### 5) Report purchases

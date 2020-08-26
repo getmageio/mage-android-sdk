@@ -318,7 +318,9 @@ public class Mage {
 
     void createSupportState(){
         supportState = new HashMap();
-        supportState.put("cachedProducts", new HashMap());
+        // supportState.put("cachedProducts", new HashMap());
+        supportState.put("cachedProducts", new ArrayList<HashMap>());
+
     }
 
     void saveToCache(){
