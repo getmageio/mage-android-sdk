@@ -181,6 +181,7 @@ public class Mage {
         HashMap requestState = sharedInstance().currentState;
         requestState.put("time", sharedInstance().getCurrentTimeStamp());
         request.put("state", requestState);
+        request.put("products", sharedInstance().supportState.get("cachedProducts"));
 
         if (inAppPurchaseId != null){
             Log.d("MageSDK", "current cached products: " + ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts")));
