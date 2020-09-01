@@ -45,10 +45,8 @@ public class Mage {
     String APIURLACCIO = "https://room-of-requirement.getmage.io/v1/accio";
     String APIURLLUMOS = "https://room-of-requirement.getmage.io/v1/lumos";
 
-    HashMap currentState;
-    HashMap supportState;
-    HashMap unfinishedTransactions;
-    HashMap unfinishedProductRequests;
+    HashMap<String, Object> currentState;
+    HashMap<String, Object> supportState;
     String apiKey;
     boolean scheduledSaveStateInProgress;
     Context context;
@@ -68,7 +66,7 @@ public class Mage {
     // apiKey = string
     // isStrict = bool, default false
     // production = bool, default false
-    public static void setOptions(Context context, HashMap options) throws Exception {
+    public static void setOptions(Context context, HashMap<String, Object> options) throws Exception {
         // if options not passed, options cant be set
         if (options == null) {
             return;
@@ -134,8 +132,6 @@ public class Mage {
         sharedInstance().currentState.put("isProduction", tmp_isProduction);
 
         sharedInstance().scheduledSaveStateInProgress = false;
-        sharedInstance().unfinishedTransactions = new HashMap();
-        sharedInstance().unfinishedProductRequests = new HashMap();
 
         sharedInstance().scheduleSaveState();
 
@@ -144,8 +140,8 @@ public class Mage {
 
         // initial API request for current price level
         // TODO check if initialization here is optimal & where to shutdown
-        sharedInstance().executor = Executors.newSingleThreadExecutor();
-        sharedInstance().executor.submit(new myRequest(sharedInstance().APIURLACCIO, sharedInstance().generateRequestObject(null), new Invoke() {
+        executor = Executors.newSingleThreadExecutor();
+        executor.submit(new myRequest(sharedInstance().APIURLACCIO, sharedInstance().generateRequestObject(null), new Invoke() {
             @Override
             public void call(Exception error, HashMap response) {
                 sharedInstance().setCachedProducts(error, response);
@@ -155,7 +151,7 @@ public class Mage {
 
     public static String getProductNameFromId(String iapID){
         Log.d("MageSDK", "getProductNameFromId: " + iapID);
-        for (HashMap internalIapObj: ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts"))){
+        for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
             Log.d("MageSDK", "looking for : " + iapID + " -> " + internalIapObj.get("iapIdentifier"));
             if(internalIapObj.get("iapIdentifier").equals(iapID)){
                 return (String) internalIapObj.get("productName");
@@ -166,7 +162,7 @@ public class Mage {
 
     public static String getIdFromProductName(String productName, String fallbackId){
         Log.d("MageSDK", "getIdFromProductName: " + productName);
-        for (HashMap internalIapObj: ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts"))){
+        for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
             Log.d("MageSDK", "looking for : " + productName + " -> " + internalIapObj.get("productName"));
             if(internalIapObj.get("productName").equals(productName)){
                 return (String) internalIapObj.get("iapIdentifier");
@@ -175,17 +171,17 @@ public class Mage {
         return fallbackId;
     }
 
-    private HashMap generateRequestObject(@Nullable String inAppPurchaseId){
-        HashMap request = new HashMap();
+    private HashMap<String, Object> generateRequestObject(@Nullable String inAppPurchaseId){
+        HashMap<String, Object> request = new HashMap<String, Object>();
         // assign state
-        HashMap requestState = sharedInstance().currentState;
-        requestState.put("time", sharedInstance().getCurrentTimeStamp());
+        HashMap<String, Object> requestState = sharedInstance().currentState;
+        requestState.put("time", getCurrentTimeStamp());
         request.put("state", requestState);
         request.put("products", sharedInstance().supportState.get("cachedProducts"));
 
         if (inAppPurchaseId != null){
             Log.d("MageSDK", "current cached products: " + ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts")));
-            for (HashMap internalIapObj: ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts"))){
+            for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
                 Log.d("MageSDK", "looking for : " + inAppPurchaseId + " -> " + internalIapObj.get("iapIdentifier"));
                 if(internalIapObj.get("iapIdentifier").equals(inAppPurchaseId)){
                     request.put("product", internalIapObj);
@@ -200,12 +196,12 @@ public class Mage {
     }
 
     public interface Invoke {
-        public void call(Exception error, HashMap response);
+        public void call(Exception error, HashMap<String, Object> response);
     }
 
-    private void setCachedProducts(Exception error, HashMap response){
-        sharedInstance().executor.shutdown();
-        Log.d("MageSDK", "[Back to main] executor shutdown: " + sharedInstance().executor.isShutdown());
+    private void setCachedProducts(Exception error, HashMap<String, Object> response){
+        executor.shutdown();
+        Log.d("MageSDK", "[Back to main] executor shutdown: " + executor.isShutdown());
         if (error == null) {
             sharedInstance().supportState.put("cachedProducts", response.get("products"));
             Log.d("MageSDK", "[Back to main] Response : " + sharedInstance().supportState.get("cachedProducts"));
@@ -217,11 +213,11 @@ public class Mage {
 
     private static class myRequest implements Runnable {
 
-        private HashMap requestContent;
+        private HashMap<String, Object> requestContent;
         private Invoke func;
         private URL url;
 
-        public myRequest(String url, HashMap requestContent, Invoke func){
+        public myRequest(String url, HashMap<String, Object> requestContent, Invoke func){
             this.requestContent = requestContent;
             this.func = func;
             try {
@@ -269,7 +265,7 @@ public class Mage {
                 return;
             }
 
-            HashMap responseContent;
+            HashMap<String, Object> responseContent;
             try {
                 JSONObject jsonResponse = new JSONObject(response);
                 responseContent = jsonToMap(jsonResponse);
@@ -287,40 +283,40 @@ public class Mage {
     // STATE RELATED
     // -------------------------------------------
     void createCurrentState(){
-        currentState = new HashMap();
+        currentState = new HashMap<>();
 
-        currentState.put("deviceId", sharedInstance().getDeviceId());
-        currentState.put("systemName", sharedInstance().getSystemName());
-        currentState.put("systemVersion", sharedInstance().getSystemVersion());
-        currentState.put("appName", sharedInstance().getAppName());
+        currentState.put("deviceId", getDeviceId());
+        currentState.put("systemName", getSystemName());
+        currentState.put("systemVersion", getSystemVersion());
+        currentState.put("appName", getAppName());
         currentState.put("platform", "Google");
-        currentState.put("deviceBrand", sharedInstance().getDeviceBrand());
-        currentState.put("deviceModel", sharedInstance().getModel());
-        currentState.put("deviceType", sharedInstance().getDeviceTypeName());
+        currentState.put("deviceBrand", getDeviceBrand());
+        currentState.put("deviceModel", getModel());
+        currentState.put("deviceType", getDeviceTypeName());
     }
 
     void updateStateOnLaunch(){
         // device
-        currentState.put("bundleId", sharedInstance().getBundleId());
-        currentState.put("appVersion", sharedInstance().getAppVersion());
-        currentState.put("buildNumber", sharedInstance().getBuildNumber());
-        currentState.put("isEmulator", sharedInstance().isEmulator());
+        currentState.put("bundleId", getBundleId());
+        currentState.put("appVersion", getAppVersion());
+        currentState.put("buildNumber", getBuildNumber());
+        currentState.put("isEmulator", isEmulator());
         // store
-        currentState.put("storeCode", sharedInstance().getStoreCode());
-        currentState.put("countryCode", sharedInstance().getCountryCode());
-        currentState.put("currencyCode", sharedInstance().getCurrencyCode());
+        currentState.put("storeCode", getStoreCode());
+        currentState.put("countryCode", getCountryCode());
+        currentState.put("currencyCode", getCurrencyCode());
         // time
-        currentState.put("timeZone", sharedInstance().getTimeZone());
-        currentState.put("timeZoneCode", sharedInstance().getTimeZoneCode());
+        currentState.put("timeZone", getTimeZone());
+        currentState.put("timeZoneCode", getTimeZoneCode());
         // production indicator
         currentState.put("isProduction", true);
         currentState.put("isStrict", true);
     }
 
     void createSupportState(){
-        supportState = new HashMap();
+        supportState = new HashMap<>();
         // supportState.put("cachedProducts", new HashMap());
-        supportState.put("cachedProducts", new ArrayList<HashMap>());
+        supportState.put("cachedProducts", new ArrayList<HashMap<String, Object>>());
 
     }
 
@@ -351,7 +347,7 @@ public class Mage {
     }
 
     public static HashMap<String, Object> jsonToMap(JSONObject json) throws JSONException {
-        HashMap<String, Object> retMap = new HashMap<String, Object>();
+        HashMap<String, Object> retMap = new HashMap<>();
 
         if(json != JSONObject.NULL) {
             retMap = toMap(json);
@@ -360,7 +356,7 @@ public class Mage {
     }
 
     public static HashMap<String, Object> toMap(JSONObject object) throws JSONException {
-        HashMap<String, Object> map = new HashMap<String, Object>();
+        HashMap<String, Object> map = new HashMap<>();
 
         Iterator<String> keysItr = object.keys();
         while(keysItr.hasNext()) {
@@ -380,7 +376,7 @@ public class Mage {
     }
 
     public static List<Object> toList(JSONArray array) throws JSONException {
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         for(int i = 0; i < array.length(); i++) {
             Object value = array.get(i);
             if(value instanceof JSONArray) {
@@ -418,8 +414,8 @@ public class Mage {
     // -------------------------------------------
     public static void userPurchased(@Nullable String inAppId){
         if(inAppId != null){
-            sharedInstance().executor = Executors.newSingleThreadExecutor();
-            sharedInstance().executor.submit(new myRequest(sharedInstance().APIURLLUMOS, sharedInstance().generateRequestObject(inAppId), new Invoke() {
+            executor = Executors.newSingleThreadExecutor();
+            executor.submit(new myRequest(sharedInstance().APIURLLUMOS, sharedInstance().generateRequestObject(inAppId), new Invoke() {
                 @Override
                 public void call(Exception error, HashMap response) {
                     // TODO implement stuff @mklb
@@ -608,7 +604,7 @@ public class Mage {
         return TimeZone.getDefault().getDisplayName(true, TimeZone.SHORT);
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
 
     }
 }
