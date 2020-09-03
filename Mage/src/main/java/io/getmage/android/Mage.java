@@ -208,14 +208,20 @@ public class Mage {
                 Log.d("MageSDK", "current cached products: " + sharedInstance().cachedProducts);
             }
             if (sharedInstance().cachedProducts != null) {
+                HashMap<String, Object> foundProduct = null;
                 for (HashMap<String, Object> internalIapObj : sharedInstance().cachedProducts) {
                     if (verbose) {
                         Log.d("MageSDK", "looking for : " + inAppPurchaseId + " -> " + internalIapObj.get("iapIdentifier"));
                     }
                     if (internalIapObj.get("iapIdentifier").equals(inAppPurchaseId)) {
-                        request.put("product", internalIapObj);
+                        foundProduct = internalIapObj;
                         break;
                     }
+                }
+                if (foundProduct != null) {
+                    request.put("product", foundProduct);
+                } else {
+                    request.put("product", null);
                 }
             } else {
                 request.put("product", null);
