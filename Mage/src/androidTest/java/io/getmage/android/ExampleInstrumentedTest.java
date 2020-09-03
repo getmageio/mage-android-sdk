@@ -32,7 +32,7 @@ public class ExampleInstrumentedTest {
         try {
             // This is an API key just for the SDK demo. (Real API keys look different!)
             Mage.setOptions(InstrumentationRegistry.getInstrumentation().getTargetContext(), new HashMap<String, Object>() {{
-                put("apiKey", "749392738494832672820");
+                put("apiKey", "87ßkjasdjnas7z3ji3zusajk38");
                 put("isStrict", false);
                 put("isProduction", true);
             }});
@@ -52,28 +52,29 @@ public class ExampleInstrumentedTest {
     @Test
     public void canLoadAProduct() {
         Log.d("MageSDKTEST", "loadproduct");
-        String someProduct = Mage.getIdFromProductName("premium_plus", "io.getmage.demo_app.premium_plus_1_25");
-        assertNotSame(someProduct, "io.getmage.demo_app.premium_plus");
+        String someProduct = Mage.getIdFromProductName("premium_static", "io.getmage.demo_app_static.premium_static_1_25");
+        assertNotSame(someProduct, "io.getmage.demo_app_static.premium_static");
     }
 
     @Test
     public void fallsBackToDefaultProduct() {
         Log.d("MageSDKTEST", "testfallback");
-        String someProduct = Mage.getIdFromProductName("NOTEXISTING", "io.getmage.demo_app.premium_plus_1_25");
-        assertEquals(someProduct, "io.getmage.demo_app.premium_plus_1_25");
+        String someProduct = Mage.getIdFromProductName("NOTEXISTING", "io.getmage.demo_app_static.premium_static_1_25");
+        assertEquals(someProduct, "io.getmage.demo_app_static.premium_static_1_25");
     }
 
     @Test
     public void canLookupAProductNameViaAnIapId() {
         Log.d("MageSDKTEST", "lookupname");
-        String someProductName = Mage.getProductNameFromId("io.getmage.demo_app.premium_plus");
-        assertEquals(someProductName, "premium_plus");
+        String someProductName = Mage.getProductNameFromId("io.getmage.demo_app_static.premium_static");
+        Log.d("MageSDKTEST", ""+someProductName);
+        assertEquals(someProductName, "premium_static");
     }
 
     @Test
     public void willReturnNullDuringAProductNameLookupWithANoneExistingId() {
         Log.d("MageSDKTEST", "wrongID");
-        String someProductName = Mage.getProductNameFromId("io.getmage.demo_app.NOTEXISTING");
+        String someProductName = Mage.getProductNameFromId("io.getmage.demo_app_static.NOTEXISTING");
         assertEquals(someProductName, null);
     }
 }

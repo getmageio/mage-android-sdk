@@ -39,6 +39,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class Mage {
 
+    private static boolean verbose = false;
+
     private static final Mage OBJ = new Mage();
 
     // This is where all the magic happens
@@ -46,7 +48,7 @@ public class Mage {
     String APIURLLUMOS = "https://room-of-requirement.getmage.io/v1/lumos";
 
     HashMap<String, Object> currentState;
-    HashMap<String, Object> supportState;
+    ArrayList<HashMap<String, Object>> cachedProducts;
     String apiKey;
     boolean scheduledSaveStateInProgress;
     Context context;
@@ -54,7 +56,9 @@ public class Mage {
     static ExecutorService executor;
 
     private Mage() {
-        Log.d("MageSDK", "initialized Singleton Mage");
+        if (verbose) {
+            Log.d("MageSDK", "initialized Singleton Mage");
+        }
     }
 
     // to get Singleton Instance
@@ -93,14 +97,18 @@ public class Mage {
             }
         }else{
             sharedInstance().context = context;
-            Log.d("MageSDK", "Mage recieved context");
+            if (verbose) {
+                Log.d("MageSDK", "Mage recieved context");
+            }
         }
 
         // if api key is passed, set api key
         String tmp_apiKey = (String) options.get("apiKey");
         if (tmp_apiKey != null) {
             sharedInstance().apiKey = tmp_apiKey;
-            Log.d("MageSDK", "Mage Api-Key set: "+sharedInstance().apiKey);
+            if (verbose) {
+                Log.d("MageSDK", "Mage Api-Key set: " + sharedInstance().apiKey);
+            }
         } else {
             // just throw an exception when strict is true
             if(tmp_isStrict){
@@ -116,14 +124,16 @@ public class Mage {
         } catch (JSONException e) {
             e.printStackTrace();
             // TODO: test if that is fired when state is empty
-            Log.d("MageSDK", "loadFromCache went wrong");
+            if (verbose) {
+                Log.d("MageSDK", "loadFromCache went wrong");
+            }
 
         }
 
         // check if state is empty
         if(sharedInstance().currentState == null || sharedInstance().currentState.isEmpty()){
             sharedInstance().createCurrentState();
-            sharedInstance().createSupportState();
+            sharedInstance().createCachedProducts();
         }
         // update state
         sharedInstance().updateStateOnLaunch();
@@ -135,37 +145,51 @@ public class Mage {
 
         sharedInstance().scheduleSaveState();
 
-        Log.d("MageSDK", "currentState: "+sharedInstance().currentState);
-        Log.d("MageSDK", "supportState: "+sharedInstance().supportState);
+        if (verbose) {
+            Log.d("MageSDK", "currentState: " + sharedInstance().currentState);
+            Log.d("MageSDK", "cachedProducts: " + sharedInstance().cachedProducts);
+        }
 
         // initial API request for current price level
         // TODO check if initialization here is optimal & where to shutdown
         executor = Executors.newSingleThreadExecutor();
         executor.submit(new myRequest(sharedInstance().APIURLACCIO, sharedInstance().generateRequestObject(null), new Invoke() {
             @Override
-            public void call(Exception error, HashMap response) {
+            public void call(Exception error, HashMap<String, Object> response) {
                 sharedInstance().setCachedProducts(error, response);
             }
         }));
     }
 
     public static String getProductNameFromId(String iapID){
-        Log.d("MageSDK", "getProductNameFromId: " + iapID);
-        for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
-            Log.d("MageSDK", "looking for : " + iapID + " -> " + internalIapObj.get("iapIdentifier"));
-            if(internalIapObj.get("iapIdentifier").equals(iapID)){
-                return (String) internalIapObj.get("productName");
+        if (verbose) {
+            Log.d("MageSDK", "getProductNameFromId: " + iapID);
+        }
+        if (sharedInstance().cachedProducts != null) {
+            for (HashMap<String, Object> internalIapObj : sharedInstance().cachedProducts) {
+                if (verbose) {
+                    Log.d("MageSDK", "looking for : " + iapID + " -> " + internalIapObj.get("iapIdentifier"));
+                }
+                if (internalIapObj.get("iapIdentifier").equals(iapID)) {
+                    return (String) internalIapObj.get("productName");
+                }
             }
         }
         return null;
     }
 
     public static String getIdFromProductName(String productName, String fallbackId){
-        Log.d("MageSDK", "getIdFromProductName: " + productName);
-        for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
-            Log.d("MageSDK", "looking for : " + productName + " -> " + internalIapObj.get("productName"));
-            if(internalIapObj.get("productName").equals(productName)){
-                return (String) internalIapObj.get("iapIdentifier");
+        if (verbose) {
+            Log.d("MageSDK", "getIdFromProductName: " + productName);
+        }
+        if (sharedInstance().cachedProducts != null) {
+            for (HashMap<String, Object> internalIapObj : sharedInstance().cachedProducts) {
+                if (verbose) {
+                    Log.d("MageSDK", "looking for : " + productName + " -> " + internalIapObj.get("productName"));
+                }
+                if (internalIapObj.get("productName").equals(productName)) {
+                    return (String) internalIapObj.get("iapIdentifier");
+                }
             }
         }
         return fallbackId;
@@ -177,20 +201,30 @@ public class Mage {
         HashMap<String, Object> requestState = sharedInstance().currentState;
         requestState.put("time", getCurrentTimeStamp());
         request.put("state", requestState);
-        request.put("products", sharedInstance().supportState.get("cachedProducts"));
+        request.put("products", sharedInstance().cachedProducts);
 
         if (inAppPurchaseId != null){
-            Log.d("MageSDK", "current cached products: " + ((ArrayList<HashMap>) sharedInstance().supportState.get("cachedProducts")));
-            for (HashMap<String, Object> internalIapObj: ((ArrayList<HashMap<String, Object>>) sharedInstance().supportState.get("cachedProducts"))){
-                Log.d("MageSDK", "looking for : " + inAppPurchaseId + " -> " + internalIapObj.get("iapIdentifier"));
-                if(internalIapObj.get("iapIdentifier").equals(inAppPurchaseId)){
-                    request.put("product", internalIapObj);
-                    break;
+            if (verbose) {
+                Log.d("MageSDK", "current cached products: " + sharedInstance().cachedProducts);
+            }
+            if (sharedInstance().cachedProducts != null) {
+                for (HashMap<String, Object> internalIapObj : sharedInstance().cachedProducts) {
+                    if (verbose) {
+                        Log.d("MageSDK", "looking for : " + inAppPurchaseId + " -> " + internalIapObj.get("iapIdentifier"));
+                    }
+                    if (internalIapObj.get("iapIdentifier").equals(inAppPurchaseId)) {
+                        request.put("product", internalIapObj);
+                        break;
+                    }
                 }
+            } else {
+                request.put("product", null);
             }
         }
 
-        Log.d("MageSDK", "generateRequestObject: " + request);
+        if (verbose) {
+            Log.d("MageSDK", "generateRequestObject: " + request);
+        }
 
         return request;
     }
@@ -201,12 +235,30 @@ public class Mage {
 
     private void setCachedProducts(Exception error, HashMap<String, Object> response){
         executor.shutdown();
-        Log.d("MageSDK", "[Back to main] executor shutdown: " + executor.isShutdown());
+        if (verbose) {
+            Log.d("MageSDK", "[Back to main] executor shutdown: " + executor.isShutdown());
+        }
         if (error == null) {
-            sharedInstance().supportState.put("cachedProducts", response.get("products"));
-            Log.d("MageSDK", "[Back to main] Response : " + sharedInstance().supportState.get("cachedProducts"));
+            Object responseProducts = response.get("products");
+            if (responseProducts == null) {
+                sharedInstance().cachedProducts = new ArrayList<HashMap<String, Object>>();
+            } else {
+                try {
+                    sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) responseProducts;
+                } catch (ClassCastException e) {
+                    e.printStackTrace();
+                    Log.d("MageSDK", "parsing http response failed");
+                    sharedInstance().cachedProducts = new ArrayList<>();
+                }
+
+            }
+            if (verbose) {
+                Log.d("MageSDK", "[Back to main] Response : " + sharedInstance().cachedProducts);
+            }
         } else {
-            Log.d("MageSDK", "[Back to main] Exception occured : " + error);
+            if (verbose) {
+                Log.d("MageSDK", "[Back to main] Exception occured : " + error);
+            }
             error.printStackTrace();
         }
     }
@@ -234,7 +286,9 @@ public class Mage {
 
             JSONObject jsonRequest = new JSONObject(requestContent);
 
-            Log.d("MageSDK", "[HTTP Thread] JSON : " + jsonRequest.toString());
+            if (verbose) {
+                Log.d("MageSDK", "[HTTP Thread ("+this.url+")] JSON : " + jsonRequest.toString());
+            }
             try {
                 con = (HttpsURLConnection) this.url.openConnection();
                 // configure connection, set headers, set apikey
@@ -252,7 +306,9 @@ public class Mage {
 
                 // start up connection
                 con.connect();
-                Log.d("MageSDK", "[HTTP Thread] Response Code : " + String.valueOf(con.getResponseCode()));
+                if (verbose) {
+                    Log.d("MageSDK", "[HTTP Thread ("+this.url+")] Response Code : " + String.valueOf(con.getResponseCode()));
+                }
                 // read response
                 BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
                 String input;
@@ -269,7 +325,9 @@ public class Mage {
             try {
                 JSONObject jsonResponse = new JSONObject(response);
                 responseContent = jsonToMap(jsonResponse);
-                Log.d("MageSDK", "[HTTP Thread] Response JSON : " + responseContent);
+                if (verbose) {
+                    Log.d("MageSDK", "[HTTP Thread ("+this.url+")] Response JSON : " + responseContent);
+                }
             } catch (JSONException e) {
                 this.func.call(e, null);
                 return;
@@ -313,37 +371,51 @@ public class Mage {
         currentState.put("isStrict", true);
     }
 
-    void createSupportState(){
-        supportState = new HashMap<>();
-        // supportState.put("cachedProducts", new HashMap());
-        supportState.put("cachedProducts", new ArrayList<HashMap<String, Object>>());
-
+    void createCachedProducts(){
+        cachedProducts = new ArrayList<>();
     }
 
     void saveToCache(){
-        Log.d("MageSDK", "saveToCache..");
+        if (verbose) {
+            Log.d("MageSDK", "saveToCache..");
+        }
         SharedPreferences preferences = context.getSharedPreferences("MagePreferences", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        JSONObject currentStateJson = new JSONObject(currentState);
+        JSONObject currentStateJson = new JSONObject(sharedInstance().currentState);
         editor.putString("currentState", currentStateJson.toString());
-        JSONObject supportStateJson = new JSONObject(supportState);
-        editor.putString("supportState", supportStateJson.toString());
+        HashMap<String, ArrayList<HashMap<String, Object>>> cachedProductsMap = new HashMap<>();
+        cachedProductsMap.put("cachedProducts", sharedInstance().cachedProducts);
+        JSONObject cachedProductsJson = new JSONObject(cachedProductsMap);
+        editor.putString("cachedProducts", cachedProductsJson.toString());
         editor.apply();
-        Log.d("MageSDK", "saveToCache currentState: " + currentStateJson.toString());
-        Log.d("MageSDK", "saveToCache supportState: " + supportStateJson.toString());
+        if (verbose) {
+            Log.d("MageSDK", "saveToCache currentState: " + currentStateJson.toString());
+            Log.d("MageSDK", "saveToCache cachedProducts: " + cachedProductsJson.toString());
+        }
     }
 
     void loadFromCache() throws JSONException {
         SharedPreferences preferences = context.getSharedPreferences("MagePreferences", Context.MODE_PRIVATE);
         String currentStateString = preferences.getString("currentState", "");
-        Log.d("MageSDK", "currentStateString: " + currentStateString);
-        String supportStateString = preferences.getString("supportState", "");
+        if (verbose) {
+            Log.d("MageSDK", "currentStateString: " + currentStateString);
+        }
+        String cachedProductsString = preferences.getString("cachedProducts", "");
         assert currentStateString != null;
         JSONObject currentStateJson = new JSONObject(currentStateString);
-        assert supportStateString != null;
-        JSONObject supportStateJson = new JSONObject(supportStateString);
-        currentState = jsonToMap(currentStateJson);
-        supportState = jsonToMap(supportStateJson);
+        assert cachedProductsString != null;
+        JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
+        sharedInstance().currentState = jsonToMap(currentStateJson);
+        HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
+        try {
+            sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
+        } catch (ClassCastException e) {
+            e.printStackTrace();
+            if (verbose) {
+                Log.d("MageSDK", "parsing cache failed");
+            }
+            sharedInstance().cachedProducts = new ArrayList<>();
+        }
     }
 
     public static HashMap<String, Object> jsonToMap(JSONObject json) throws JSONException {
@@ -395,7 +467,9 @@ public class Mage {
         if(scheduledSaveStateInProgress){
             return;
         }
-        Log.d("MageSDK", "scheduleSaveState..");
+        if (verbose) {
+            Log.d("MageSDK", "scheduleSaveState..");
+        }
         scheduledSaveStateInProgress = true;
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
@@ -417,9 +491,11 @@ public class Mage {
             executor = Executors.newSingleThreadExecutor();
             executor.submit(new myRequest(sharedInstance().APIURLLUMOS, sharedInstance().generateRequestObject(inAppId), new Invoke() {
                 @Override
-                public void call(Exception error, HashMap response) {
+                public void call(Exception error, HashMap<String, Object> response) {
                     // TODO implement stuff @mklb
-                    Log.d("MageSDK", "userPurchased http callback: " + response);
+                    if (verbose) {
+                        Log.d("MageSDK", "userPurchased http callback: " + response);
+                    }
                 }
             }));
         }
@@ -575,15 +651,21 @@ public class Mage {
         // because there is no way to tell in which store the user is we use the sims country code
         TelephonyManager teleMgr = (TelephonyManager)sharedInstance().context.getSystemService(Context.TELEPHONY_SERVICE);
         if (teleMgr != null){
-            Log.d("MageSDK", "teleMgr not null " + teleMgr);
+            if (verbose) {
+                Log.d("MageSDK", "teleMgr not null " + teleMgr);
+            }
             String iso = teleMgr.getSimCountryIso();
             if(iso != null && !iso.isEmpty()){
-                Log.d("MageSDK", "teleMgr iso not null " + iso);
+                if (verbose) {
+                    Log.d("MageSDK", "teleMgr iso not null " + iso);
+                }
                 // ISO 3166 country code (Aplha-2)
                 return teleMgr.getSimCountryIso().toUpperCase();
             }
         }
-        Log.d("MageSDK", "teleMgr unknown");
+        if (verbose) {
+            Log.d("MageSDK", "teleMgr unknown");
+        }
         return null;
     }
 
