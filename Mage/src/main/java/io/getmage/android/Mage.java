@@ -121,20 +121,25 @@ public class Mage {
         // try to load state from cache
         try {
             sharedInstance().loadFromCache();
-        } catch (JSONException e) {
+        } catch (JSONException | ClassCastException e) {
             e.printStackTrace();
             // TODO: test if that is fired when state is empty
             if (verbose) {
                 Log.d("MageSDK", "loadFromCache went wrong");
             }
+            sharedInstance().createCurrentState();
+            sharedInstance().createCachedProducts();
 
         }
 
         // check if state is empty
         if(sharedInstance().currentState == null || sharedInstance().currentState.isEmpty()){
             sharedInstance().createCurrentState();
+        }
+        if(sharedInstance().cachedProducts == null){
             sharedInstance().createCachedProducts();
         }
+
         // update state
         sharedInstance().updateStateOnLaunch();
 
@@ -400,27 +405,29 @@ public class Mage {
         }
     }
 
-    void loadFromCache() throws JSONException {
+    void loadFromCache() throws JSONException, ClassCastException {
         SharedPreferences preferences = context.getSharedPreferences("MagePreferences", Context.MODE_PRIVATE);
+
+        //Userstate
         String currentStateString = preferences.getString("currentState", "");
-        if (verbose) {
-            Log.d("MageSDK", "currentStateString: " + currentStateString);
-        }
-        String cachedProductsString = preferences.getString("cachedProducts", "");
-        assert currentStateString != null;
-        JSONObject currentStateJson = new JSONObject(currentStateString);
-        assert cachedProductsString != null;
-        JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
-        sharedInstance().currentState = jsonToMap(currentStateJson);
-        HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
-        try {
-            sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
-        } catch (ClassCastException e) {
-            e.printStackTrace();
+        if (currentStateString != null) {
             if (verbose) {
-                Log.d("MageSDK", "parsing cache failed");
+                Log.d("MageSDK", "currentStateString: " + currentStateString);
             }
-            sharedInstance().cachedProducts = new ArrayList<>();
+            JSONObject currentStateJson = new JSONObject(currentStateString);
+            sharedInstance().currentState = jsonToMap(currentStateJson);
+        } else {
+            sharedInstance().createCurrentState();
+        }
+
+        //cachedProducts
+        String cachedProductsString = preferences.getString("cachedProducts", "");
+        if (cachedProductsString != null) {
+            JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
+            HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
+            sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
+        } else {
+            sharedInstance().createCachedProducts();
         }
     }
 
