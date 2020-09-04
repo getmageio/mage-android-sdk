@@ -411,7 +411,7 @@ public class Mage {
         if (preferences != null) {
             //Userstate
             String currentStateString = preferences.getString("currentState", "");
-            if (currentStateString != null) {
+            if (currentStateString != null && currentStateString.equals("")) {
                 if (verbose) {
                     Log.d("MageSDK", "currentStateString: " + currentStateString);
                 }
@@ -423,7 +423,7 @@ public class Mage {
 
             //cachedProducts
             String cachedProductsString = preferences.getString("cachedProducts", "");
-            if (cachedProductsString != null) {
+            if (cachedProductsString != null && cachedProductsString.equals("")) {
                 JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
                 HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
                 sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
