@@ -408,25 +408,30 @@ public class Mage {
     void loadFromCache() throws JSONException, ClassCastException {
         SharedPreferences preferences = context.getSharedPreferences("MagePreferences", Context.MODE_PRIVATE);
 
-        //Userstate
-        String currentStateString = preferences.getString("currentState", "");
-        if (currentStateString != null) {
-            if (verbose) {
-                Log.d("MageSDK", "currentStateString: " + currentStateString);
+        if (preferences != null) {
+            //Userstate
+            String currentStateString = preferences.getString("currentState", "");
+            if (currentStateString != null) {
+                if (verbose) {
+                    Log.d("MageSDK", "currentStateString: " + currentStateString);
+                }
+                JSONObject currentStateJson = new JSONObject(currentStateString);
+                sharedInstance().currentState = jsonToMap(currentStateJson);
+            } else {
+                sharedInstance().createCurrentState();
             }
-            JSONObject currentStateJson = new JSONObject(currentStateString);
-            sharedInstance().currentState = jsonToMap(currentStateJson);
+
+            //cachedProducts
+            String cachedProductsString = preferences.getString("cachedProducts", "");
+            if (cachedProductsString != null) {
+                JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
+                HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
+                sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
+            } else {
+                sharedInstance().createCachedProducts();
+            }
         } else {
             sharedInstance().createCurrentState();
-        }
-
-        //cachedProducts
-        String cachedProductsString = preferences.getString("cachedProducts", "");
-        if (cachedProductsString != null) {
-            JSONObject cachedProductsJson = new JSONObject(cachedProductsString);
-            HashMap<String, Object> cachedProductsMap = jsonToMap(cachedProductsJson);
-            sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) cachedProductsMap.get("cachedProducts");
-        } else {
             sharedInstance().createCachedProducts();
         }
     }
