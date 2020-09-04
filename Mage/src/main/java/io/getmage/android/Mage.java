@@ -122,14 +122,20 @@ public class Mage {
         try {
             sharedInstance().loadFromCache();
         } catch (JSONException | ClassCastException e) {
-            e.printStackTrace();
             // TODO: test if that is fired when state is empty
             if (verbose) {
+                e.printStackTrace();
                 Log.d("MageSDK", "loadFromCache went wrong");
             }
             sharedInstance().createCurrentState();
             sharedInstance().createCachedProducts();
-
+        } catch (Exception err) {
+            if (verbose) {
+                err.printStackTrace();
+                Log.d("MageSDK", "loadFromCache went wrong");
+            }
+            sharedInstance().createCurrentState();
+            sharedInstance().createCachedProducts();
         }
 
         // check if state is empty
@@ -257,9 +263,10 @@ public class Mage {
                 try {
                     sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) responseProducts;
                 } catch (ClassCastException e) {
-                    e.printStackTrace();
-                    Log.d("MageSDK", "parsing http response failed");
-                    sharedInstance().cachedProducts = new ArrayList<>();
+                    if (verbose) {
+                        e.printStackTrace();
+                        Log.d("MageSDK", "parsing http response failed");
+                    }
                 }
 
             }
@@ -268,9 +275,9 @@ public class Mage {
             }
         } else {
             if (verbose) {
+                error.printStackTrace();
                 Log.d("MageSDK", "[Back to main] Exception occured : " + error);
             }
-            error.printStackTrace();
         }
     }
 
