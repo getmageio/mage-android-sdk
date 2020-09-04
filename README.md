@@ -26,7 +26,7 @@ allprojects {
 ```gradle
 dependencies {
   ...
-  implementation 'com.github.getmageio:mage-android-sdk:1.0.2'
+  implementation 'com.github.getmageio:mage-android-sdk:1.0.3'
 }
 ```
 
