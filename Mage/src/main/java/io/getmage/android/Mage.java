@@ -170,7 +170,7 @@ public class Mage {
                 if (verbose) {
                     Log.d("MageSDK", "looking for : " + iapID + " -> " + internalIapObj.get("iapIdentifier"));
                 }
-                if (internalIapObj.get("iapIdentifier").equals(iapID)) {
+                if (iapID.equals(internalIapObj.get("iapIdentifier"))) {
                     return (String) internalIapObj.get("productName");
                 }
             }
@@ -187,7 +187,7 @@ public class Mage {
                 if (verbose) {
                     Log.d("MageSDK", "looking for : " + productName + " -> " + internalIapObj.get("productName"));
                 }
-                if (internalIapObj.get("productName").equals(productName)) {
+                if (productName.equals(internalIapObj.get("productName"))) {
                     return (String) internalIapObj.get("iapIdentifier");
                 }
             }
@@ -196,7 +196,7 @@ public class Mage {
     }
 
     private HashMap<String, Object> generateRequestObject(@Nullable String inAppPurchaseId){
-        HashMap<String, Object> request = new HashMap<String, Object>();
+        HashMap<String, Object> request = new HashMap<>();
         // assign state
         HashMap<String, Object> requestState = sharedInstance().currentState;
         requestState.put("time", getCurrentTimeStamp());
@@ -213,7 +213,7 @@ public class Mage {
                     if (verbose) {
                         Log.d("MageSDK", "looking for : " + inAppPurchaseId + " -> " + internalIapObj.get("iapIdentifier"));
                     }
-                    if (internalIapObj.get("iapIdentifier").equals(inAppPurchaseId)) {
+                    if (inAppPurchaseId.equals(internalIapObj.get("iapIdentifier"))) {
                         foundProduct = internalIapObj;
                         break;
                     }
@@ -236,7 +236,7 @@ public class Mage {
     }
 
     public interface Invoke {
-        public void call(Exception error, HashMap<String, Object> response);
+        void call(Exception error, HashMap<String, Object> response);
     }
 
     private void setCachedProducts(Exception error, HashMap<String, Object> response){
@@ -247,7 +247,7 @@ public class Mage {
         if (error == null) {
             Object responseProducts = response.get("products");
             if (responseProducts == null) {
-                sharedInstance().cachedProducts = new ArrayList<HashMap<String, Object>>();
+                sharedInstance().cachedProducts = new ArrayList<>();
             } else {
                 try {
                     sharedInstance().cachedProducts = (ArrayList<HashMap<String, Object>>) responseProducts;
@@ -288,7 +288,7 @@ public class Mage {
         @Override
         public void run() {
             String response = "";
-            HttpsURLConnection con = null;
+            HttpsURLConnection con;
 
             JSONObject jsonRequest = new JSONObject(requestContent);
 
@@ -313,7 +313,7 @@ public class Mage {
                 // start up connection
                 con.connect();
                 if (verbose) {
-                    Log.d("MageSDK", "[HTTP Thread ("+this.url+")] Response Code : " + String.valueOf(con.getResponseCode()));
+                    Log.d("MageSDK", "[HTTP Thread ("+this.url+")] Response Code : " + con.getResponseCode());
                 }
                 // read response
                 BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
