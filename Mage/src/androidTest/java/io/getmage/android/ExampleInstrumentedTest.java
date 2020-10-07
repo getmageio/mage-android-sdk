@@ -37,6 +37,8 @@ public class ExampleInstrumentedTest {
                 put("isProduction", true);
             }});
 
+            Mage.setUserIdentifier("myUserId");
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -26,7 +26,7 @@ allprojects {
 ```gradle
 dependencies {
   ...
-  implementation 'com.github.getmageio:mage-android-sdk:1.0.6'
+  implementation 'com.github.getmageio:mage-android-sdk:1.1.0'
 }
 ```
 
@@ -62,7 +62,7 @@ try {
 
 ### 3) Get your in app purchase IDs
 
-Wherever you show in app purchases call `getIdFromProductName` to get the correct in app purchase ID. This could be, for example, somewhere in your ViewController for your store view / popup.
+Wherever you show in app purchases, call `getIdFromProductName` to get the correct in app purchase ID. This could be, for example, somewhere in your ViewController for your store view / popup.
 
 ```java
 // Get the correct in app purchase id to show to the user
@@ -72,7 +72,7 @@ Mage.getIdFromProductName("myProduct", "com.myapp.myFallbackID");
 
 ### 4) Know what you sold
 
-In some cases you might want to know what the user bought so you can send it to a CRM,
+In some cases, you might want to know what the user bought so you can send it to a CRM,
 your own backend or for some custom logic inside your app. `getProductNameFromId` will help you out!
 
 ```java
@@ -90,6 +90,15 @@ Auto-purchase tracking is not yet implemented in our Android Java SDK. Whenever 
 
 ```java
 Mage.userPurchased("com.myapp.someIapID")
+```
+
+### 6) Identify the user for our Subscription Lifetime Value Tracking (optional)
+Subscription status tracking is usually done on your backend or by some third party service. Apple or Google sends real-time subscription status updates that you interpret and take action on. This is why we provide a simple Web API to enable subscription lifetime value tracking for Mage. Apple or Google contacts your backend, your backend contacts Mage.
+
+This way, we can adequately track the durations of your subscriptions and identify free trial and introductory price offer conversion rates. To make this feature work, you need to implement the `setUserIdentifier` method so that we can identify the calls from your backend. [Learn more about our Subscription Lifetime Value Tracking Feature](link...).
+
+```java
+Mage.setUserIdentifier("myUserIdentifier")
 ```
 
 

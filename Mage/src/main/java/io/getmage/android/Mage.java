@@ -172,6 +172,16 @@ public class Mage {
         }));
     }
 
+    public static void setUserIdentifier(String userId){
+        if(sharedInstance().currentState != null){
+            if (verbose) {
+                Log.d("MageSDK", "setUserIdentifier: " + userId);
+            }
+            sharedInstance().currentState.put("appUserId", userId);
+        }
+        sharedInstance().scheduleSaveState();
+    }
+
     public static String getProductNameFromId(String iapID){
         if (verbose) {
             Log.d("MageSDK", "getProductNameFromId: " + iapID);
