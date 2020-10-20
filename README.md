@@ -40,6 +40,7 @@ import io.getmage.android.Mage;
 
 ### 2) Set the API Key
 
+We recommend initializing the Mage SDK after the app start. That way, there are no delays as soon as you want to show an in-app purchase to your user, as the current price levels are already cached in the background.
 ```java
 try {
     Mage.setOptions(getApplicationContext(), new HashMap<String, Object>() {{
